@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mediator — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0e1a;
+            --surface: rgba(255,255,255,0.04);
+            --surface-hover: rgba(255,255,255,0.08);
+            --border: rgba(255,255,255,0.08);
+            --text: #e2e8f0;
+            --text-muted: rgba(255,255,255,0.45);
+            --accent: #6366f1;
+            --accent-glow: rgba(99,102,241,0.25);
+            --green: #22c55e;
+            --green-bg: rgba(34,197,94,0.12);
+            --red: #ef4444;
+            --red-bg: rgba(239,68,68,0.12);
+            --yellow: #eab308;
+            --yellow-bg: rgba(234,179,8,0.12);
+            --blue: #3b82f6;
+            --blue-bg: rgba(59,130,246,0.12);
+            --cyan: #06b6d4;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(139,92,246,0.05) 0%, transparent 50%);
+            animation: bgShift 20s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        @keyframes bgShift {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-2%, -2%) rotate(3deg); }
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 32px 24px;
+            margin-bottom: 28px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #06b6d4, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .status-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            padding: 6px 16px;
+            background: var(--green-bg);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--green);
+        }
+
+        .status-live .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-matches .stat-value { color: var(--green); }
+        .stat-misses .stat-value { color: var(--yellow); }
+        .stat-errors .stat-value { color: var(--red); }
+        .stat-polls .stat-value { color: var(--blue); }
+
+        /* Config Section */
+        .config-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(10px);
+        }
+
+        .config-section h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--cyan);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 12px;
+        }
+
+        .config-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .config-item .label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            min-width: 120px;
+        }
+
+        .config-item .value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        /* Buttons */
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: var(--surface-hover);
+            border-color: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Activity Log */
+        .log-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .log-section h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--cyan);
+        }
+
+        .log-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .filter-btn:hover:not(.active) {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .log-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .log-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .log-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.15s;
+        }
+
+        .log-entry:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry .log-icon {
+            font-size: 1rem;
+            min-width: 24px;
+            text-align: center;
+            padding-top: 2px;
+        }
+
+        .log-entry .log-content {
+            flex: 1;
+        }
+
+        .log-entry .log-message {
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .log-entry .log-time {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .log-entry .log-details {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+            word-break: break-all;
+        }
+
+        .log-entry.type-match { border-left: 3px solid var(--green); }
+        .log-entry.type-complete { border-left: 3px solid var(--green); }
+        .log-entry.type-miss { border-left: 3px solid var(--yellow); }
+        .log-entry.type-error { border-left: 3px solid var(--red); }
+        .log-entry.type-info { border-left: 3px solid var(--blue); }
+        .log-entry.type-poll { border-left: 3px solid var(--cyan); }
+
+        .empty-log {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-log i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header h1 { font-size: 1.5rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .config-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Mediator</h1>
+            <p class="subtitle">Auto-matching movie requests with Telegram library links</p>
+            <div class="status-live" id="statusBadge">
+                <div class="dot"></div>
+                <span>LIVE — Monitoring</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card stat-polls">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-value" id="totalPolls">0</div>
+                <div class="stat-label">Total Polls</div>
+            </div>
+            <div class="stat-card stat-matches">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="totalMatches">0</div>
+                <div class="stat-label">Matches Found</div>
+            </div>
+            <div class="stat-card stat-misses">
+                <div class="stat-icon">❌</div>
+                <div class="stat-value" id="totalMisses">0</div>
+                <div class="stat-label">No Match</div>
+            </div>
+            <div class="stat-card stat-errors">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value" id="totalErrors">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+        </div>
+
+        <!-- Config -->
+        <div class="config-section">
+            <h2><i class="fas fa-cog"></i> Configuration</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <span class="label">🎬 Movie Portal</span>
+                    <span class="value" id="prpUrl">—</span>
+                </div>
+                <div class="config-item">
+                    <span class="label">📚 Telegram Library</span>
+                    <span class="value" id="teleUrl">—</span>
+                </div>
+                <div class="config-item">
+                    <span class="label">⏱️ Poll Interval</span>
+                    <span class="value" id="pollInterval">—</span>
+                </div>
+                <div class="config-item">
+                    <span class="label">🎯 Match Threshold</span>
+                    <span class="value" id="matchThreshold">—</span>
+                </div>
+                <div class="config-item">
+                    <span class="label">⏰ Last Poll</span>
+                    <span class="value" id="lastPoll">—</span>
+                </div>
+                <div class="config-item">
+                    <span class="label">🟢 Last Match</span>
+                    <span class="value" id="lastMatch">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-primary" id="triggerBtn" onclick="triggerProcessing()">
+                <i class="fas fa-bolt"></i> Trigger Now
+            </button>
+            <button class="btn" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="log-section">
+            <h2><i class="fas fa-stream"></i> Activity Log</h2>
+            <div class="log-filters">
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+                <button class="filter-btn" data-filter="match" onclick="setFilter('match', this)">✅ Matches</button>
+                <button class="filter-btn" data-filter="complete" onclick="setFilter('complete', this)">🎯 Completed</button>
+                <button class="filter-btn" data-filter="miss" onclick="setFilter('miss', this)">❌ Misses</button>
+                <button class="filter-btn" data-filter="error" onclick="setFilter('error', this)">⚠️ Errors</button>
+                <button class="filter-btn" data-filter="info" onclick="setFilter('info', this)">ℹ️ Info</button>
+            </div>
+            <div class="log-list" id="logList">
+                <div class="empty-log">
+                    <i class="fas fa-hourglass-start"></i>
+                    Loading activity log...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        const LOG_ICONS = {
+            info: '<i class="fas fa-info-circle" style="color:#3b82f6"></i>',
+            match: '<i class="fas fa-check-circle" style="color:#22c55e"></i>',
+            complete: '<i class="fas fa-bullseye" style="color:#22c55e"></i>',
+            miss: '<i class="fas fa-times-circle" style="color:#eab308"></i>',
+            error: '<i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>',
+            poll: '<i class="fas fa-radar" style="color:#06b6d4"></i>',
+        };
+
+        function timeAgo(dateStr) {
+            if (!dateStr) return '—';
+            const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+            if (diff < 60) return `${Math.floor(diff)}s ago`;
+            if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+            return `${Math.floor(diff/86400)}d ago`;
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                document.getElementById('totalPolls').textContent = data.stats.totalPolls;
+                document.getElementById('totalMatches').textContent = data.stats.totalMatches;
+                document.getElementById('totalMisses').textContent = data.stats.totalMisses;
+                document.getElementById('totalErrors').textContent = data.stats.totalErrors;
+
+                document.getElementById('prpUrl').textContent = data.config.prpUrl;
+                document.getElementById('teleUrl').textContent = data.config.teleLibraryUrl;
+                document.getElementById('pollInterval').textContent = (data.config.pollIntervalMs / 1000) + 's';
+                document.getElementById('matchThreshold').textContent = (data.config.matchThreshold * 100) + '%';
+                document.getElementById('lastPoll').textContent = timeAgo(data.stats.lastPollTime);
+                document.getElementById('lastMatch').textContent = data.stats.lastMatchTime ? timeAgo(data.stats.lastMatchTime) : 'None yet';
+            } catch (err) {
+                document.getElementById('statusBadge').innerHTML = '<div class="dot" style="background:var(--red)"></div><span style="color:var(--red)">DISCONNECTED</span>';
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const url = currentFilter === 'all' ? '/api/logs?limit=100' : `/api/logs?limit=100&type=${currentFilter}`;
+                const res = await fetch(url);
+                const logs = await res.json();
+
+                const logList = document.getElementById('logList');
+
+                if (logs.length === 0) {
+                    logList.innerHTML = '<div class="empty-log"><i class="fas fa-inbox"></i>No activity yet. Waiting for first poll...</div>';
+                    return;
+                }
+
+                logList.innerHTML = logs.map(log => {
+                    const icon = LOG_ICONS[log.type] || '<i class="fas fa-circle"></i>';
+                    let details = '';
+
+                    if (log.link) {
+                        details = `<div class="log-details"><strong>Link:</strong> <a href="${log.link}" target="_blank" style="color:#6366f1">${log.link}</a></div>`;
+                    } else if (log.matchedFile) {
+                        details = `<div class="log-details"><strong>File:</strong> ${log.matchedFile} — Score: ${(log.score * 100).toFixed(0)}%</div>`;
+                    }
+
+                    return `
+                        <div class="log-entry type-${log.type}">
+                            <div class="log-icon">${icon}</div>
+                            <div class="log-content">
+                                <div class="log-message">${escapeHtml(log.message)}</div>
+                                ${details}
+                                <div class="log-time">${timeAgo(log.time)}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to fetch logs:', err);
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            fetchLogs();
+        }
+
+        async function triggerProcessing() {
+            const btn = document.getElementById('triggerBtn');
+            btn.classList.add('loading');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                await fetch('/api/trigger');
+            } catch (err) {
+                console.error('Trigger failed:', err);
+            }
+
+            setTimeout(() => {
+                btn.classList.remove('loading');
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Trigger Now';
+                refreshData();
+            }, 2000);
+        }
+
+        function refreshData() {
+            fetchStatus();
+            fetchLogs();
+        }
+
+        // Initial load
+        refreshData();
+
+        // Auto-refresh every 10 seconds
+        setInterval(refreshData, 10000);
+    </script>
+</body>
+</html>

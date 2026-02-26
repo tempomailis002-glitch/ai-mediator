@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-mediator
+    runtime: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PRP_API_URL
+        value: https://prp-ivnf.onrender.com
+      - key: TELE_LIBRARY_URL
+        value: https://tele-to-gofile.onrender.com
+      - key: POLL_INTERVAL_MS
+        value: "30000"
