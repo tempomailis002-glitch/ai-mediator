@@ -57,6 +57,53 @@ function normalize(str) {
 }
 
 /**
+ * Levenshtein distance — measures how many edits (insert/delete/replace)
+ * are needed to turn string 'a' into string 'b'.
+ * Used to handle typos like "Baashha" vs "Baasha".
+ */
+function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        }
+    }
+    return dp[m][n];
+}
+
+/**
+ * Similarity score between two strings (0 to 1).
+ * 1 = identical, 0 = completely different.
+ */
+function similarity(a, b) {
+    const maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return 1;
+    return 1 - levenshtein(a, b) / maxLen;
+}
+
+/**
+ * Check if a keyword fuzzy-matches any word in the file name.
+ * Returns the best similarity score (0-1).
+ */
+function fuzzyKeywordMatch(keyword, fileWords) {
+    let bestSim = 0;
+    // Check exact inclusion first
+    const fileStr = fileWords.join(' ');
+    if (fileStr.includes(keyword)) return 1.0;
+    // Check each word for fuzzy match
+    for (const word of fileWords) {
+        const sim = similarity(keyword, word);
+        if (sim > bestSim) bestSim = sim;
+    }
+    return bestSim;
+}
+
+/**
  * Extract meaningful keywords from a movie name,
  * filtering out very short or common filler words
  */
@@ -77,6 +124,7 @@ function extractKeywords(name) {
 
 /**
  * Score how well a file matches a movie request.
+ * Uses fuzzy matching (Levenshtein distance) to handle typos.
  * Returns a score between 0 and 1.
  */
 function scoreMatch(movieName, fileName) {
@@ -84,15 +132,18 @@ function scoreMatch(movieName, fileName) {
     if (movieKeywords.length === 0) return 0;
 
     const normalizedFile = normalize(fileName);
+    const fileWords = normalizedFile.split(' ').filter(w => w.length >= 2);
 
-    let matchedCount = 0;
+    let totalScore = 0;
     for (const keyword of movieKeywords) {
-        if (normalizedFile.includes(keyword)) {
-            matchedCount++;
+        const kwScore = fuzzyKeywordMatch(keyword, fileWords);
+        // Only count as a match if similarity > 0.6 (allows 1-2 char typos)
+        if (kwScore >= 0.6) {
+            totalScore += kwScore;
         }
     }
 
-    return matchedCount / movieKeywords.length;
+    return totalScore / movieKeywords.length;
 }
 
 /**
@@ -130,11 +181,12 @@ async function fetchRequests() {
 }
 
 /**
- * Search the Telegram Library for files matching a query
+ * Fetch ALL files from the Telegram Library (no search filter).
+ * We do matching locally with fuzzy logic instead of relying on
+ * the API's exact substring search.
  */
-async function searchTelegramLibrary(query) {
-    const encodedQuery = encodeURIComponent(query);
-    const response = await fetch(`${TELE_LIBRARY_URL}/api/files?q=${encodedQuery}`);
+async function fetchAllLibraryFiles() {
+    const response = await fetch(`${TELE_LIBRARY_URL}/api/files`);
     if (!response.ok) throw new Error(`Telegram Library API returned ${response.status}`);
     const data = await response.json();
     return data.files || [];
@@ -182,36 +234,16 @@ async function processRequests() {
             const movieYear = request.year || '';
 
             try {
-                // Search with just the movie name first
+                // Fetch ALL files from library and do local fuzzy matching
                 log('info', `Searching for: "${movieName}" (${movieYear})`);
-                let files = await searchTelegramLibrary(movieName);
-
-                // If no results, try individual keywords
-                if (files.length === 0) {
-                    const keywords = extractKeywords(movieName);
-                    for (const keyword of keywords) {
-                        if (keyword.length >= 3) {
-                            const keywordFiles = await searchTelegramLibrary(keyword);
-                            files = [...files, ...keywordFiles];
-                        }
-                    }
-                    // Deduplicate
-                    const seen = new Set();
-                    files = files.filter(f => {
-                        if (seen.has(f.messageId)) return false;
-                        seen.add(f.messageId);
-                        return true;
-                    });
-                }
+                const files = await fetchAllLibraryFiles();
 
                 if (files.length === 0) {
-                    log('miss', `No files found for "${movieName}" — will re-check next poll`, {
+                    log('miss', `Telegram library is empty or unavailable — will re-check next poll`, {
                         requestId: request.id,
                         movieName,
                     });
                     stats.totalMisses++;
-                    // NOTE: Do NOT add to processedIds — we want to re-check misses
-                    // Don't cache misses — re-check on every poll
                     continue;
                 }
 
