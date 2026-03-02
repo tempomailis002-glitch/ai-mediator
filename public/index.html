@@ -556,6 +556,14 @@
                     </span>
                 </div>
                 <div class="config-item">
+                    <span class="label">🔁 Max Retries</span>
+                    <span class="value">
+                        <input type="number" class="interval-select" id="maxRetriesInput" value="10" min="1" max="100"
+                            style="width: 70px; text-align: center;" onchange="changeMaxRetries(this.value)">
+                        <span class="interval-saved" id="retriesSaved">✅ Saved!</span>
+                    </span>
+                </div>
+                <div class="config-item">
                     <span class="label">🎯 Match Threshold</span>
                     <span class="value" id="matchThreshold">—</span>
                 </div>
@@ -637,6 +645,11 @@
                 const select = document.getElementById('pollIntervalSelect');
                 if (select && !select.matches(':focus')) {
                     select.value = data.config.pollIntervalMs.toString();
+                }
+                // Sync max retries input
+                const retriesInput = document.getElementById('maxRetriesInput');
+                if (retriesInput && !retriesInput.matches(':focus')) {
+                    retriesInput.value = data.config.maxRetries;
                 }
                 document.getElementById('matchThreshold').textContent = (data.config.matchThreshold * 100) + '%';
                 document.getElementById('lastPoll').textContent = timeAgo(data.stats.lastPollTime);
@@ -737,6 +750,26 @@
                 }
             } catch (err) {
                 console.error('Failed to change interval:', err);
+            }
+        }
+
+        async function changeMaxRetries(value) {
+            const retries = parseInt(value);
+            if (retries < 1) return;
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ maxRetries: retries }),
+                });
+                if (res.ok) {
+                    const saved = document.getElementById('retriesSaved');
+                    saved.classList.add('show');
+                    setTimeout(() => saved.classList.remove('show'), 2000);
+                    refreshData();
+                }
+            } catch (err) {
+                console.error('Failed to change max retries:', err);
             }
         }
 

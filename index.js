@@ -5,6 +5,7 @@ const path = require('path');
 const PRP_API_URL = (process.env.PRP_API_URL || 'https://prp-ivnf.onrender.com').replace(/\/$/, '');
 const TELE_LIBRARY_URL = (process.env.TELE_LIBRARY_URL || 'https://tele-to-gofile.onrender.com').replace(/\/$/, '');
 let currentPollInterval = parseInt(process.env.POLL_INTERVAL_MS) || 300000; // Default: 5 minutes
+let maxRetries = parseInt(process.env.MAX_RETRIES) || 10; // Auto-mark as 'Not Available' after this many misses
 const PORT = process.env.PORT || 3002;
 const MATCH_THRESHOLD = 0.4; // 40% of keywords must match
 
@@ -35,7 +36,8 @@ const stats = {
     totalErrors: 0,
     lastPollTime: null,
     lastMatchTime: null,
-    processedIds: new Set(), // Track requests we've already attempted
+    processedIds: new Set(), // Track requests we've already completed
+    retryCount: new Map(), // Track how many times each request has been searched
 };
 
 // ─── Fuzzy Matching ──────────────────────────────────────────────
@@ -205,6 +207,19 @@ async function completeRequest(requestId, link) {
     return response.json();
 }
 
+/**
+ * Mark a request as 'Not Available' (incomplete) on the Movie Request Portal
+ */
+async function markUnavailable(requestId) {
+    const response = await fetch(`${PRP_API_URL}/api/requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'incomplete' }),
+    });
+    if (!response.ok) throw new Error(`Failed to mark request unavailable: ${response.status}`);
+    return response.json();
+}
+
 // ─── Main Processing Loop ────────────────────────────────────────
 
 async function processRequests() {
@@ -239,11 +254,23 @@ async function processRequests() {
                 const files = await fetchAllLibraryFiles();
 
                 if (files.length === 0) {
-                    log('miss', `Telegram library is empty or unavailable — will re-check next poll`, {
+                    const count = (stats.retryCount.get(request.id) || 0) + 1;
+                    stats.retryCount.set(request.id, count);
+                    log('miss', `Telegram library empty/unavailable for "${movieName}" (attempt ${count}/${maxRetries})`, {
                         requestId: request.id,
                         movieName,
+                        attempt: count,
                     });
                     stats.totalMisses++;
+
+                    if (count >= maxRetries) {
+                        await markUnavailable(request.id);
+                        stats.processedIds.add(request.id);
+                        stats.retryCount.delete(request.id);
+                        log('info', `❌ "${movieName}" marked as NOT AVAILABLE after ${count} failed attempts`, {
+                            requestId: request.id,
+                        });
+                    }
                     continue;
                 }
 
@@ -271,13 +298,24 @@ async function processRequests() {
                     // Only cache completed requests — so they're not re-processed
                     stats.processedIds.add(request.id);
                 } else {
-                    log('miss', `No confident match for "${movieName}" (best score below ${MATCH_THRESHOLD * 100}% threshold) — will retry`, {
+                    const count = (stats.retryCount.get(request.id) || 0) + 1;
+                    stats.retryCount.set(request.id, count);
+                    log('miss', `No confident match for "${movieName}" — attempt ${count}/${maxRetries}`, {
                         requestId: request.id,
                         movieName,
                         filesChecked: files.length,
+                        attempt: count,
                     });
                     stats.totalMisses++;
-                    // Don't cache misses — re-check on next poll
+
+                    if (count >= maxRetries) {
+                        await markUnavailable(request.id);
+                        stats.processedIds.add(request.id);
+                        stats.retryCount.delete(request.id);
+                        log('info', `❌ "${movieName}" marked as NOT AVAILABLE after ${count} failed attempts`, {
+                            requestId: request.id,
+                        });
+                    }
                 }
 
             } catch (err) {
@@ -314,6 +352,7 @@ app.get('/api/status', (req, res) => {
             prpUrl: PRP_API_URL,
             teleLibraryUrl: TELE_LIBRARY_URL,
             pollIntervalMs: currentPollInterval,
+            maxRetries: maxRetries,
             matchThreshold: MATCH_THRESHOLD,
         },
         stats: {
@@ -342,6 +381,7 @@ app.get('/api/logs', (req, res) => {
 // Manual trigger
 app.get('/api/trigger', async (req, res) => {
     stats.processedIds.clear();
+    stats.retryCount.clear();
     await processRequests();
     res.json({ message: 'Processing triggered', stats });
 });
@@ -349,13 +389,25 @@ app.get('/api/trigger', async (req, res) => {
 // Change poll interval
 app.use(express.json());
 app.post('/api/config', (req, res) => {
-    const { pollIntervalMs } = req.body;
+    const { pollIntervalMs, maxRetries: newMaxRetries } = req.body;
+    const changes = {};
+
     if (pollIntervalMs && typeof pollIntervalMs === 'number' && pollIntervalMs >= 10000) {
         currentPollInterval = pollIntervalMs;
+        changes.pollIntervalMs = currentPollInterval;
         log('info', `Poll interval changed to ${currentPollInterval / 1000}s`);
-        res.json({ success: true, pollIntervalMs: currentPollInterval });
+    }
+
+    if (newMaxRetries && typeof newMaxRetries === 'number' && newMaxRetries >= 1) {
+        maxRetries = newMaxRetries;
+        changes.maxRetries = maxRetries;
+        log('info', `Max retries changed to ${maxRetries}`);
+    }
+
+    if (Object.keys(changes).length > 0) {
+        res.json({ success: true, ...changes });
     } else {
-        res.status(400).json({ error: 'pollIntervalMs must be a number >= 10000 (10 seconds)' });
+        res.status(400).json({ error: 'Provide pollIntervalMs (>= 10000) or maxRetries (>= 1)' });
     }
 });
 
