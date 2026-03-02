@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,25 +9,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
             --bg: #0a0e1a;
-            --surface: rgba(255,255,255,0.04);
-            --surface-hover: rgba(255,255,255,0.08);
-            --border: rgba(255,255,255,0.08);
+            --surface: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.08);
             --text: #e2e8f0;
-            --text-muted: rgba(255,255,255,0.45);
+            --text-muted: rgba(255, 255, 255, 0.45);
             --accent: #6366f1;
-            --accent-glow: rgba(99,102,241,0.25);
+            --accent-glow: rgba(99, 102, 241, 0.25);
             --green: #22c55e;
-            --green-bg: rgba(34,197,94,0.12);
+            --green-bg: rgba(34, 197, 94, 0.12);
             --red: #ef4444;
-            --red-bg: rgba(239,68,68,0.12);
+            --red-bg: rgba(239, 68, 68, 0.12);
             --yellow: #eab308;
-            --yellow-bg: rgba(234,179,8,0.12);
+            --yellow-bg: rgba(234, 179, 8, 0.12);
             --blue: #3b82f6;
-            --blue-bg: rgba(59,130,246,0.12);
+            --blue-bg: rgba(59, 130, 246, 0.12);
             --cyan: #06b6d4;
         }
 
@@ -46,16 +51,21 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.06) 0%, transparent 50%),
-                        radial-gradient(ellipse at 50% 80%, rgba(139,92,246,0.05) 0%, transparent 50%);
+            background: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
             animation: bgShift 20s ease-in-out infinite alternate;
             z-index: 0;
         }
 
         @keyframes bgShift {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(-2%, -2%) rotate(3deg); }
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(-2%, -2%) rotate(3deg);
+            }
         }
 
         .container {
@@ -98,7 +108,7 @@
             margin-top: 14px;
             padding: 6px 16px;
             background: var(--green-bg);
-            border: 1px solid rgba(34,197,94,0.2);
+            border: 1px solid rgba(34, 197, 94, 0.2);
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
@@ -114,8 +124,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+            }
         }
 
         /* Stats Grid */
@@ -138,7 +157,7 @@
 
         .stat-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(255,255,255,0.12);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
         .stat-card .stat-icon {
@@ -159,10 +178,21 @@
             letter-spacing: 0.5px;
         }
 
-        .stat-matches .stat-value { color: var(--green); }
-        .stat-misses .stat-value { color: var(--yellow); }
-        .stat-errors .stat-value { color: var(--red); }
-        .stat-polls .stat-value { color: var(--blue); }
+        .stat-matches .stat-value {
+            color: var(--green);
+        }
+
+        .stat-misses .stat-value {
+            color: var(--yellow);
+        }
+
+        .stat-errors .stat-value {
+            color: var(--red);
+        }
+
+        .stat-polls .stat-value {
+            color: var(--blue);
+        }
 
         /* Config Section */
         .config-section {
@@ -192,9 +222,9 @@
             align-items: center;
             gap: 10px;
             padding: 10px 14px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.04);
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .config-item .label {
@@ -236,7 +266,7 @@
 
         .btn:hover {
             background: var(--surface-hover);
-            border-color: rgba(255,255,255,0.15);
+            border-color: rgba(255, 255, 255, 0.15);
             transform: translateY(-1px);
         }
 
@@ -311,7 +341,7 @@
         }
 
         .log-list::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
 
@@ -320,12 +350,12 @@
             align-items: flex-start;
             gap: 12px;
             padding: 12px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             transition: background 0.15s;
         }
 
         .log-entry:hover {
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .log-entry:last-child {
@@ -359,17 +389,34 @@
             color: var(--text-muted);
             margin-top: 4px;
             padding: 6px 10px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 6px;
             word-break: break-all;
         }
 
-        .log-entry.type-match { border-left: 3px solid var(--green); }
-        .log-entry.type-complete { border-left: 3px solid var(--green); }
-        .log-entry.type-miss { border-left: 3px solid var(--yellow); }
-        .log-entry.type-error { border-left: 3px solid var(--red); }
-        .log-entry.type-info { border-left: 3px solid var(--blue); }
-        .log-entry.type-poll { border-left: 3px solid var(--cyan); }
+        .log-entry.type-match {
+            border-left: 3px solid var(--green);
+        }
+
+        .log-entry.type-complete {
+            border-left: 3px solid var(--green);
+        }
+
+        .log-entry.type-miss {
+            border-left: 3px solid var(--yellow);
+        }
+
+        .log-entry.type-error {
+            border-left: 3px solid var(--red);
+        }
+
+        .log-entry.type-info {
+            border-left: 3px solid var(--blue);
+        }
+
+        .log-entry.type-poll {
+            border-left: 3px solid var(--cyan);
+        }
 
         .empty-log {
             text-align: center;
@@ -387,12 +434,63 @@
 
         /* Responsive */
         @media (max-width: 640px) {
-            .header h1 { font-size: 1.5rem; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .config-grid { grid-template-columns: 1fr; }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Poll Interval Selector */
+        .interval-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .interval-select:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.12);
+        }
+
+        .interval-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .interval-select option {
+            background: #1a1f2e;
+            color: var(--text);
+        }
+
+        .interval-saved {
+            font-size: 0.7rem;
+            color: var(--green);
+            margin-left: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .interval-saved.show {
+            opacity: 1;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -443,7 +541,19 @@
                 </div>
                 <div class="config-item">
                     <span class="label">⏱️ Poll Interval</span>
-                    <span class="value" id="pollInterval">—</span>
+                    <span class="value">
+                        <select class="interval-select" id="pollIntervalSelect"
+                            onchange="changePollInterval(this.value)">
+                            <option value="30000">30 seconds</option>
+                            <option value="60000">1 minute</option>
+                            <option value="120000">2 minutes</option>
+                            <option value="300000" selected>5 minutes</option>
+                            <option value="600000">10 minutes</option>
+                            <option value="900000">15 minutes</option>
+                            <option value="1800000">30 minutes</option>
+                        </select>
+                        <span class="interval-saved" id="intervalSaved">✅ Saved!</span>
+                    </span>
                 </div>
                 <div class="config-item">
                     <span class="label">🎯 Match Threshold</span>
@@ -476,7 +586,8 @@
             <div class="log-filters">
                 <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
                 <button class="filter-btn" data-filter="match" onclick="setFilter('match', this)">✅ Matches</button>
-                <button class="filter-btn" data-filter="complete" onclick="setFilter('complete', this)">🎯 Completed</button>
+                <button class="filter-btn" data-filter="complete" onclick="setFilter('complete', this)">🎯
+                    Completed</button>
                 <button class="filter-btn" data-filter="miss" onclick="setFilter('miss', this)">❌ Misses</button>
                 <button class="filter-btn" data-filter="error" onclick="setFilter('error', this)">⚠️ Errors</button>
                 <button class="filter-btn" data-filter="info" onclick="setFilter('info', this)">ℹ️ Info</button>
@@ -505,9 +616,9 @@
             if (!dateStr) return '—';
             const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
             if (diff < 60) return `${Math.floor(diff)}s ago`;
-            if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-            if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-            return `${Math.floor(diff/86400)}d ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
         }
 
         async function fetchStatus() {
@@ -522,7 +633,11 @@
 
                 document.getElementById('prpUrl').textContent = data.config.prpUrl;
                 document.getElementById('teleUrl').textContent = data.config.teleLibraryUrl;
-                document.getElementById('pollInterval').textContent = (data.config.pollIntervalMs / 1000) + 's';
+                // Sync dropdown with current server value
+                const select = document.getElementById('pollIntervalSelect');
+                if (select && !select.matches(':focus')) {
+                    select.value = data.config.pollIntervalMs.toString();
+                }
                 document.getElementById('matchThreshold').textContent = (data.config.matchThreshold * 100) + '%';
                 document.getElementById('lastPoll').textContent = timeAgo(data.stats.lastPollTime);
                 document.getElementById('lastMatch').textContent = data.stats.lastMatchTime ? timeAgo(data.stats.lastMatchTime) : 'None yet';
@@ -606,6 +721,25 @@
             fetchLogs();
         }
 
+        async function changePollInterval(value) {
+            const ms = parseInt(value);
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pollIntervalMs: ms }),
+                });
+                if (res.ok) {
+                    const saved = document.getElementById('intervalSaved');
+                    saved.classList.add('show');
+                    setTimeout(() => saved.classList.remove('show'), 2000);
+                    refreshData();
+                }
+            } catch (err) {
+                console.error('Failed to change interval:', err);
+            }
+        }
+
         // Initial load
         refreshData();
 
@@ -613,4 +747,5 @@
         setInterval(refreshData, 10000);
     </script>
 </body>
+
 </html>

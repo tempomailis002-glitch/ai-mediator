@@ -4,7 +4,7 @@ const path = require('path');
 // ─── Configuration ───────────────────────────────────────────────
 const PRP_API_URL = (process.env.PRP_API_URL || 'https://prp-ivnf.onrender.com').replace(/\/$/, '');
 const TELE_LIBRARY_URL = (process.env.TELE_LIBRARY_URL || 'https://tele-to-gofile.onrender.com').replace(/\/$/, '');
-const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS) || 30000;
+let currentPollInterval = parseInt(process.env.POLL_INTERVAL_MS) || 300000; // Default: 5 minutes
 const PORT = process.env.PORT || 3002;
 const MATCH_THRESHOLD = 0.4; // 40% of keywords must match
 
@@ -313,7 +313,7 @@ app.get('/api/status', (req, res) => {
         config: {
             prpUrl: PRP_API_URL,
             teleLibraryUrl: TELE_LIBRARY_URL,
-            pollIntervalMs: POLL_INTERVAL_MS,
+            pollIntervalMs: currentPollInterval,
             matchThreshold: MATCH_THRESHOLD,
         },
         stats: {
@@ -346,6 +346,19 @@ app.get('/api/trigger', async (req, res) => {
     res.json({ message: 'Processing triggered', stats });
 });
 
+// Change poll interval
+app.use(express.json());
+app.post('/api/config', (req, res) => {
+    const { pollIntervalMs } = req.body;
+    if (pollIntervalMs && typeof pollIntervalMs === 'number' && pollIntervalMs >= 10000) {
+        currentPollInterval = pollIntervalMs;
+        log('info', `Poll interval changed to ${currentPollInterval / 1000}s`);
+        res.json({ success: true, pollIntervalMs: currentPollInterval });
+    } else {
+        res.status(400).json({ error: 'pollIntervalMs must be a number >= 10000 (10 seconds)' });
+    }
+});
+
 // Dashboard
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -357,13 +370,20 @@ app.listen(PORT, () => {
     console.log(`\n🤖 AI Mediator running at http://localhost:${PORT}`);
     console.log(`   📡 Movie Request Portal: ${PRP_API_URL}`);
     console.log(`   📚 Telegram Library:     ${TELE_LIBRARY_URL}`);
-    console.log(`   ⏱️  Polling interval:     ${POLL_INTERVAL_MS / 1000}s`);
+    console.log(`   ⏱️  Polling interval:     ${currentPollInterval / 1000}s`);
     console.log(`   🎯 Match threshold:      ${MATCH_THRESHOLD * 100}%\n`);
 
-    // Start polling
+    // Start polling with dynamic interval (setTimeout loop)
     log('info', 'AI Mediator started — beginning to poll for requests');
     processRequests(); // First poll immediately
-    setInterval(processRequests, POLL_INTERVAL_MS);
+
+    function schedulePoll() {
+        setTimeout(async () => {
+            await processRequests();
+            schedulePoll(); // Schedule next poll with current interval
+        }, currentPollInterval);
+    }
+    schedulePoll();
 
     // Self-ping to keep Render free tier awake
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL;
