@@ -8,6 +8,7 @@ let currentPollInterval = parseInt(process.env.POLL_INTERVAL_MS) || 300000; // D
 let maxRetries = parseInt(process.env.MAX_RETRIES) || 10; // Auto-mark as 'Not Available' after this many misses
 const PORT = process.env.PORT || 3002;
 const MATCH_THRESHOLD = 0.4; // 40% of keywords must match
+const TARGET_FORWARD_CHANNEL = process.env.TARGET_FORWARD_CHANNEL || 'prprequ'; // Channel B
 
 // ─── Activity Log ────────────────────────────────────────────────
 const activityLog = [];
@@ -284,13 +285,36 @@ async function processRequests() {
                         movieName,
                         matchedFile: match.file.fileName,
                         score: match.score,
-                        link: match.file.link,
+                        originalLink: match.file.link,
                     });
 
-                    await completeRequest(request.id, match.file.link);
+                    let finalLink = match.file.link;
+                    try {
+                        log('info', `Forwarding "${match.file.fileName}" to ${TARGET_FORWARD_CHANNEL}...`);
+                        const forwardRes = await fetch(`${TELE_LIBRARY_URL}/api/forward`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ messageId: match.file.messageId, toChannel: TARGET_FORWARD_CHANNEL }),
+                        });
+                        
+                        if (forwardRes.ok) {
+                            const forwardData = await forwardRes.json();
+                            if (forwardData.success && forwardData.link) {
+                                finalLink = forwardData.link;
+                                log('info', `Successfully forwarded, new link: ${finalLink}`);
+                            } else {
+                                log('error', `Forwarding failed: ${forwardData.error || 'Unknown error'}`);
+                            }
+                        } else {
+                            log('error', `Forward API returned status ${forwardRes.status}`);
+                        }
+                    } catch (forwardErr) {
+                        log('error', `Failed to call forward API: ${forwardErr.message}`);
+                    }
 
-                    log('complete', `Auto-completed request for "${movieName}" with link: ${match.file.link}`, {
+                    log('complete', `Successfully forwarded "${movieName}" to Channel B. Waiting for PRP Portal watcher to pick it up!`, {
                         requestId: request.id,
+                        forwardedLink: finalLink
                     });
 
                     stats.totalMatches++;
